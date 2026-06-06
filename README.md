@@ -136,7 +136,7 @@ Box
 # 📥 Установка
 ## 1. Клонирование репозитория
 ```bash
-git clone https://github.com/Kanayeqqe/Information-system-for-collecting-anonymous-verified-reviews.git
+git clone https://github.com/skaneoff/Information-system-for-collecting-anonymous-verified-reviews.git
 cd Information-system-for-collecting-anonymous-verified-reviews
 ```
 ## 2. Настройка переменных окружения
