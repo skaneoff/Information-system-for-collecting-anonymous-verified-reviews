@@ -40,10 +40,16 @@ export default function LatestReviewsCard() {
 
         const data = await response.json();
         // Записываем массив из поля "feedbacks", как показано в Swagger
-        setFeedbacks(data.feedbacks || []);
-      } catch (err: any) {
+        setFeedbacks(
+          Array.isArray(data?.feedbacks)
+            ? (data.feedbacks as FeedbackData[])
+            : []
+        );
+      } catch (err: unknown) {
         console.error("Ошибка при получении отзывов:", err);
-        setError(err.message || "Ошибка соединения с сервером");
+        setError(
+          err instanceof Error ? err.message : "Ошибка соединения с сервером"
+        );
       } finally {
         setIsLoading(false);
       }

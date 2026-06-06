@@ -9,6 +9,10 @@ interface User {
   token?: string;
 }
 
+interface ElectronWindow extends Window {
+  process?: { type?: string };
+}
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,10 +26,10 @@ export default function App() {
     return queryParams.get("uuid") || null;
   });
 
+  const electronWindow = window as ElectronWindow;
   const isElectron =
     (typeof window !== "undefined" &&
-      typeof window.process !== "undefined" &&
-      (window.process as any).type === "renderer") ||
+      electronWindow.process?.type === "renderer") ||
     (typeof navigator !== "undefined" &&
       navigator.userAgent.toLowerCase().includes("electron"));
 

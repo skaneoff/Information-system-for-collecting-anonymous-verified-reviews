@@ -42,10 +42,12 @@ export default function BoxList() {
         }
 
         const data = await response.json();
-        setBoxes(data.boxes || []);
-      } catch (err: any) {
+        setBoxes(Array.isArray(data?.boxes) ? (data.boxes as BoxData[]) : []);
+      } catch (err: unknown) {
         console.error("Ошибка при получении боксов:", err);
-        setError(err.message || "Ошибка соединения с сервером");
+        setError(
+          err instanceof Error ? err.message : "Ошибка соединения с сервером"
+        );
       } finally {
         setIsLoading(false);
       }

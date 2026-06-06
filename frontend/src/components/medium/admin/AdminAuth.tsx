@@ -9,16 +9,40 @@ interface AuthCardProps {
   setAuthToken: (value: string | null) => void;
   screen?: string;
   setScreen: (value: "main" | "sender" | "recipient") => void;
-  isAuth?: boolean; // Добавили знак ?, теперь они не ломают сборку
-  setIsAuth?: (value: boolean) => void; // Добавили знак ?
 }
 
 interface CardProps {
   setIsLogin: (value: boolean) => void;
-  setAuthToken: (value: string | null) => void; // Передаем её строго в подкомпоненты
+  setAuthToken: (value: string | null) => void;
   screen?: string;
   setScreen: (value: "main" | "sender" | "recipient") => void;
 }
+
+interface ValidationErrorItem {
+  msg: string;
+}
+
+interface ApiErrorBody {
+  detail?: string | ValidationErrorItem[];
+}
+
+const isValidationErrorArray = (
+  value: unknown
+): value is ValidationErrorItem[] =>
+  Array.isArray(value) &&
+  value.every(
+    (item) =>
+      typeof item === "object" &&
+      item !== null &&
+      "msg" in item &&
+      typeof (item as ValidationErrorItem).msg === "string"
+  );
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return fallback;
+};
 
 const isElectron =
   typeof window !== "undefined" &&
@@ -54,21 +78,26 @@ const registerFunc = async (
     });
     if (!response.ok) {
       const errorData = await response.json();
-      if (Array.isArray(errorData.detail)) {
-        const textError = errorData.detail
-          .map((err: any) => translateError(err.msg))
+      const detail =
+        typeof errorData === "object" &&
+        errorData !== null &&
+        "detail" in errorData
+          ? (errorData as ApiErrorBody).detail
+          : undefined;
+
+      if (isValidationErrorArray(detail)) {
+        const textError = detail
+          .map((err) => translateError(err.msg))
           .join(". ");
         throw new Error(textError);
       }
       if (
-        errorData.detail === "User already exists" ||
-        errorData.detail === "User already registered"
+        detail === "User already exists" ||
+        detail === "User already registered"
       ) {
         throw new Error("User with this username already exists");
       }
-      throw new Error(
-        errorData.detail || "An error occurred during registration"
-      );
+      throw new Error(detail || "An error occurred during registration");
     }
     const data = await response.json();
     const token = data.access_token || data.token;
@@ -77,10 +106,13 @@ const registerFunc = async (
       useAuthStore.getState().setAuth(token, { username });
     }
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Request error:", error);
-    throw (
-      error.message || "Failed to connect to the server. Check your connection"
+    throw new Error(
+      getErrorMessage(
+        error,
+        "Failed to connect to the server. Check your connection"
+      )
     );
   }
 };
@@ -96,7 +128,13 @@ const loginFunc = async (username: string, password: string) => {
     });
     if (!response.ok) {
       const errorData = await response.json();
-      const detailMsg = String(errorData.detail || "").toLowerCase();
+      const detail =
+        typeof errorData === "object" &&
+        errorData !== null &&
+        "detail" in errorData
+          ? (errorData as ApiErrorBody).detail
+          : undefined;
+      const detailMsg = String(detail || "").toLowerCase();
       if (
         detailMsg.includes("invalid credentials") ||
         detailMsg.includes("incorrect username") ||
@@ -104,15 +142,13 @@ const loginFunc = async (username: string, password: string) => {
       ) {
         throw new Error("Incorrect username or password");
       }
-      if (Array.isArray(errorData.detail)) {
-        const textError = errorData.detail
-          .map((err: any) => translateError(err.msg))
+      if (isValidationErrorArray(detail)) {
+        const textError = detail
+          .map((err) => translateError(err.msg))
           .join(". ");
         throw new Error(textError);
       }
-      throw new Error(
-        errorData.detail || "An error occurred during authorization"
-      );
+      throw new Error(detail || "An error occurred during authorization");
     }
     const data = await response.json();
     const token = data.access_token || data.token;
@@ -121,10 +157,13 @@ const loginFunc = async (username: string, password: string) => {
       useAuthStore.getState().setAuth(token, { username });
     }
     return data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Request error:", error);
-    throw (
-      error.message || "Failed to connect to the server. Check your connection"
+    throw new Error(
+      getErrorMessage(
+        error,
+        "Failed to connect to the server. Check your connection"
+      )
     );
   }
 };
@@ -143,8 +182,8 @@ const Login = ({ setIsLogin, setAuthToken, setScreen }: CardProps) => {
         const savedToken = localStorage.getItem("token");
         setAuthToken(savedToken);
       }
-    } catch (errMessage: any) {
-      setError(errMessage);
+    } catch (errMessage: unknown) {
+      setError(getErrorMessage(errMessage, "Не удалось выполнить запрос"));
     }
   };
 
@@ -217,8 +256,8 @@ const Registration = ({ setIsLogin, setAuthToken, setScreen }: CardProps) => {
         const savedToken = localStorage.getItem("token");
         setAuthToken(savedToken);
       }
-    } catch (errMessage: any) {
-      setError(errMessage);
+    } catch (errMessage: unknown) {
+      setError(getErrorMessage(errMessage, "Не удалось выполнить запрос"));
     }
   };
 

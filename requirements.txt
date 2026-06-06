@@ -5,3 +5,4 @@ sqlalchemy
 pytest
 aiogram
 httpx
+python-dotenv

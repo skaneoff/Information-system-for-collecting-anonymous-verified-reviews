@@ -8,6 +8,12 @@ import BoxList from "./uuidLink/linkList";
 import LatestReviewsCard from "./review/Reviews";
 import { API_BASE_URL } from "../../../utils/api";
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return fallback;
+};
+
 interface AdminPanelProps {
   setAuthToken: (value: string | null) => void;
   setScreen: (value: "main" | "sender" | "recipient") => void;
@@ -86,15 +92,6 @@ interface StatProps {
   setBlockedReviews: (value: number) => void;
 }
 
-interface StatProps {
-  totalReviews: number;
-  setTotalReviews: (value: number) => void;
-  moderatedReviews: number;
-  setModeratedReviews: (value: number) => void;
-  blockedReviews: number;
-  setBlockedReviews: (value: number) => void;
-}
-
 export const Statistics = ({
   totalReviews,
   setTotalReviews,
@@ -133,12 +130,12 @@ export const Statistics = ({
 
         if (feedbacksRes.ok) {
           const feedbacksData = await feedbacksRes.json();
-          const list = feedbacksData.feedbacks || [];
+          const list = Array.isArray(feedbacksData?.feedbacks)
+            ? (feedbacksData.feedbacks as FeedbackData[])
+            : [];
 
           setTotalReviews(list.length);
-          const approved = list.filter(
-            (f: any) => f.is_moderated !== false
-          ).length;
+          const approved = list.filter((f) => f.is_moderated !== false).length;
           setModeratedReviews(approved);
           setBlockedReviews(list.length - approved);
           if (list.length > 0 && list[0].created_at) {
@@ -148,15 +145,17 @@ export const Statistics = ({
         }
         if (boxesRes.ok) {
           const boxesData = await boxesRes.json();
-          const list = boxesData.boxes || [];
+          const list = Array.isArray(boxesData?.boxes)
+            ? (boxesData.boxes as BoxData[])
+            : [];
           setUuidLinks(list.length);
           const totalClicks = list.reduce(
-            (sum: number, box: any) => sum + (box.clicks || 0),
+            (sum: number, box) => sum + (box.clicks || 0),
             0
           );
           setClicksCount(totalClicks);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Ошибка при сборке статистики на фронтенде:", error);
       }
     };
@@ -307,6 +306,7 @@ interface FeedbackData {
   text?: string;
   box_uuid?: string;
   created_at?: string;
+  is_moderated?: boolean | null;
 }
 
 export const Links = () => {
@@ -340,10 +340,10 @@ export const Links = () => {
       }
 
       const data = await response.json();
-      setBoxes(data.boxes || []);
-    } catch (err: any) {
+      setBoxes(Array.isArray(data?.boxes) ? (data.boxes as BoxData[]) : []);
+    } catch (err: unknown) {
       console.error("Ошибка при получении боксов:", err);
-      setError(err.message || "Ошибка соединения с сервером");
+      setError(getErrorMessage(err, "Ошибка соединения с сервером"));
     } finally {
       setIsLoading(false);
     }
@@ -371,9 +371,9 @@ export const Links = () => {
 
       // После успешного создания принудительно обновляем весь список
       await fetchBoxes();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Ошибка создания ссылки:", err);
-      alert(err.message || "Не удалось создать ссылку");
+      alert(getErrorMessage(err, "Не удалось создать ссылку"));
     } finally {
       setIsCreating(false);
     }
@@ -426,12 +426,6 @@ export const Links = () => {
   );
 };
 
-interface FeedbackData {
-  id?: string | number;
-  text?: string;
-  box_uuid?: string;
-  created_at?: string;
-}
 export const Reviews = () => {
   const [feedbacks, setFeedbacks] = useState<FeedbackData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -462,10 +456,12 @@ export const Reviews = () => {
       }
 
       const data = await response.json();
-      setFeedbacks(data.feedbacks || []);
-    } catch (err: any) {
+      setFeedbacks(
+        Array.isArray(data?.feedbacks) ? (data.feedbacks as FeedbackData[]) : []
+      );
+    } catch (err: unknown) {
       console.error("Ошибка при получении отзывов:", err);
-      setError(err.message || "Ошибка соединения с сервером");
+      setError(getErrorMessage(err, "Ошибка соединения с сервером"));
     } finally {
       setIsLoading(false);
     }
