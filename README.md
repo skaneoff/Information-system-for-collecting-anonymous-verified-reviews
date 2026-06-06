@@ -94,22 +94,35 @@ Box
 # 📁 Предполагаемая структура проекта
 ```text
 .
-├── backend/
-│   ├── src/
-│   ├── services/
-│   ├── middleware/
-│   ├── models/
-│   └── main.py
-│
+├── api/
+│   └── openapi.yaml
+├── bot/
+│   ├── api_client.py
+│   ├── main.py
+│   ├── rate_limit.py
+│   └── states.py
+├── db/
+│   ├── schema.sql
+│   └── seed.sql
 ├── frontend/
 │   ├── src/
 │   ├── public/
-│   └── package.json
-│
-├── openapi.yaml
+│   ├── package.json
+│   └── vite.config.ts
+├── src/
+│   ├── core/
+│   ├── db/
+│   ├── middlewares/
+│   ├── models/
+│   ├── routers/
+│   ├── schemas/
+│   ├── services/
+│   └── utils/
 ├── docker-compose.yml
+├── Dockerfile
+├── .env.example
 ├── README.md
-└── .env
+└── DEPLOYMENT.md
 ```
 ---
 # 🚀 Быстрый старт
@@ -129,39 +142,50 @@ cd Information-system-for-collecting-anonymous-verified-reviews
 ## 2. Настройка переменных окружения
 Создайте файл:
 ```bash
-.env
+cp .env.example .env
 ```
-Пример содержимого:
-```env
-TELEGRAM_BOT_TOKEN=your_token
-API_BASE_URL=http://localhost:8000
-```
+Заполните значения в `.env` в соответствии с вашей средой.
+---
+## Переменные окружения
+| Переменная | Описание | Пример |
+|------------|----------|--------|
+| `DB_HOST` | Хост PostgreSQL | `db` |
+| `DB_PORT` | Порт PostgreSQL | `5432` |
+| `DB_NAME` | Имя базы данных | `reviews` |
+| `DB_USER` | Пользователь базы данных | `postgres` |
+| `DB_PASSWORD` | Пароль пользователя базы данных | `postgres` |
+| `TELEGRAM_BOT_TOKEN` | Токен Telegram-бота | `YOUR_TELEGRAM_TOKEN` |
+| `API_BASE_URL` | Базовый URL API для фронтенда | `http://localhost:8000` |
 ---
 # 🐳 Запуск через Docker (рекомендуется)
 ```bash
 docker compose up --build
 ```
+Сервис будет доступен на:
+- `http://localhost:8000` — backend
+- фронтенд-окружение через `frontend` после сборки, если настроено в Docker Compose
 ---
 # 💻 Локальный запуск
 ## Backend
-Создание виртуального окружения:
+### 1. Создание виртуального окружения
 ```bash
 python -m venv .venv
 ```
-### Windows
+### 2. Активация виртуального окружения
+#### Windows
 ```bash
 .venv\Scripts\activate
 ```
-### Linux / macOS
+#### Linux / macOS
 ```bash
 source .venv/bin/activate
 ```
-Установка зависимостей:
+### 3. Установка зависимостей
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
-Запуск:
+### 4. Запуск
 ```bash
 uvicorn src.main:app \
     --reload \
@@ -170,18 +194,18 @@ uvicorn src.main:app \
 ```
 ---
 ## Frontend
-Установка зависимостей:
+### 1. Установка зависимостей
 ```bash
 cd frontend
 npm install
 ```
-Запуск:
+### 2. Запуск
 ```bash
 npm run dev
 ```
 ---
 # 📚 API Документация
-После запуска доступны:
+После запуска backend доступны:
 ### Swagger UI
 ```text
 http://localhost:8000/docs
@@ -190,6 +214,9 @@ http://localhost:8000/docs
 ```text
 http://localhost:8000/redoc
 ```
+---
+# 🧾 Руководство администратора
+Полное руководство по развёртыванию и обслуживанию системы см. в `DEPLOYMENT.md`.
 ---
 # 🔌 OpenAPI
 Проект использует OpenAPI-спецификацию.
