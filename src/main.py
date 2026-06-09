@@ -1,12 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse
 
+from src.core.logger import init_logging, logger
 from src.db.database import init_db
 from src.routers import box_router, feedback_router
 from src.routers.auth_router import router as auth_router
 
+init_logging()
 app = FastAPI()
 
 app.add_middleware(
@@ -48,6 +50,32 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info("Incoming request %s %s", request.method, request.url.path)
+    try:
+        response = await call_next(request)
+        logger.info(
+            "Request complete %s %s status=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+        )
+        return response
+    except Exception:
+        logger.exception(
+            "Unhandled error while processing request %s %s",
+            request.method,
+            request.url.path,
+        )
+        raise
+
+
+@app.on_event("startup")
+def startup_event():
+    logger.info("Application startup completed successfully")
 
 
 @app.get("/", response_class=HTMLResponse)

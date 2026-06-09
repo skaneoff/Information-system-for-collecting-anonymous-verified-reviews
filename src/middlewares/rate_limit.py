@@ -1,7 +1,9 @@
+import logging
 from time import time
 
 from fastapi import HTTPException, status
 
+logger = logging.getLogger("app.middleware.rate_limit")
 requests = {}
 MAX_REQUESTS = 10
 WINDOW_SECONDS = 60
@@ -20,6 +22,7 @@ def check_rate(ip: str, route: str):
     requests[key] = history
 
     if len(history) > MAX_REQUESTS:
+        logger.warning("Rate limit exceeded for %s on %s", ip, route)
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many requests, please wait a minute",
