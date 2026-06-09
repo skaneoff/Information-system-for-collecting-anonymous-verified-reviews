@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
+from src.core.logger import logger
 from src.db.database import get_db
 from src.models.box import Box
 from src.models.feedback import Feedback
@@ -34,11 +35,13 @@ def register(data: RegisterRequest, db: Session = _db_dependency):
         )
 
     if get_user_by_username(db, data.username) is not None:
+        logger.warning("Registration attempt failed for existing user %s", data.username)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists"
         )
 
     user = create_user(db, data.username, data.password)
+    logger.info("Registered new user %s", data.username)
     return AuthResponse(username=user.username, token=user.auth_token)
 
 
@@ -46,10 +49,12 @@ def register(data: RegisterRequest, db: Session = _db_dependency):
 def login(data: LoginRequest, db: Session = _db_dependency):
     user = authenticate_user(db, data.username, data.password)
     if user is None:
+        logger.warning("Login failed for username %s", data.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
         )
+    logger.info("User logged in %s", data.username)
     return AuthResponse(username=user.username, token=user.auth_token)
 
 
@@ -64,6 +69,7 @@ def me(
 
 def _get_user_or_401(authorization: str | None, db: Session) -> User:
     if not authorization:
+        logger.warning("Authorization header missing")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authorization header missing",
@@ -73,6 +79,7 @@ def _get_user_or_401(authorization: str | None, db: Session) -> User:
         token = token[7:].strip()
     user = get_user_by_token(db, token)
     if user is None:
+        logger.warning("Invalid auth token received")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )

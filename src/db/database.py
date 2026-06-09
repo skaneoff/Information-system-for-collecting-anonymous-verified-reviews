@@ -1,11 +1,13 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
+import logging
 
 from src.core.config import DATABASE_URL
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+logger = logging.getLogger("app.db")
 
 
 def get_db():
@@ -17,4 +19,11 @@ def get_db():
 
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database initialized and connected successfully")
+    except Exception:
+        logger.critical("Database initialization failed", exc_info=True)
+        raise
