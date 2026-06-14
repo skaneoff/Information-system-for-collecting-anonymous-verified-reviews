@@ -44,8 +44,21 @@ else
   echo "[backup] Warning: media dir $MEDIA_DIR_PATH not found, skipping media backup"
 fi
 
-echo "[backup] Backup complete. Files:"
-echo "  - $BACKUP_FILE"
-echo "  - $MEDIA_ARCHIVE"
+echo "[backup] Backup complete!"
+echo ""
+if [ -f "$BACKUP_FILE" ]; then
+  echo "✓ SQL backup: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
+else
+  echo "✗ SQL backup FAILED - file not created"
+  echo "  Check: pg_dump is installed and .env credentials are correct"
+fi
+if [ -f "$MEDIA_ARCHIVE" ]; then
+  echo "✓ Media archive: $MEDIA_ARCHIVE ($(du -h "$MEDIA_ARCHIVE" | cut -f1))"
+else
+  echo "⚠ Media archive: skipped (uploads folder may not exist)"
+fi
+echo ""
+echo "[backup] Press Enter to close..."
+read -r
 
 exit 0

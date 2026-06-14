@@ -61,5 +61,8 @@ else
 fi
 
 echo "[restore] Restore complete"
+echo ""
+echo "[restore] Press Enter to close..."
+read -r
 
 exit 0
